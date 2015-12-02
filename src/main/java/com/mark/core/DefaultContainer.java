@@ -1,8 +1,13 @@
 package com.mark.core;
 
+import com.mark.annotation.Bean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,12 +23,47 @@ public class DefaultContainer implements Container {
 
     public DefaultContainer(String... basePackage) {
         for (String p : basePackage) {
-            scanPackage(p);
+            scanPackage(p.trim());
         }
     }
 
     private void scanPackage(String basePackage) {
         // TODO
+        try {
+            Enumeration<URL> urls = DefaultContainer.class.getClassLoader().getResources(basePackage.replace(".", "/"));
+            while (urls.hasMoreElements()) {
+                URL url = urls.nextElement();
+                String protocol = url.getProtocol();
+                if (protocol.equals("file")) {
+                    File path = new File(url.getPath());
+                    File[] subFiles = path.listFiles(file -> file.isFile() && file.getName().endsWith(".class") || file.isDirectory());
+                    for (File subFile : subFiles) {
+                        if (subFile.isFile()) {
+                            String fileName = subFile.getName();
+                            String clsName = fileName.substring(0, fileName.lastIndexOf("."));
+                            String fullClsName = clsName;
+                            if (!"".equals(basePackage)) {
+                                fullClsName = basePackage + "." + clsName;
+                            }
+                            try {
+                                Class<?> cls = Class.forName(fullClsName);
+                                if (cls.isAnnotationPresent(Bean.class)) {
+                                    Object obj = cls.newInstance();
+                                    container.put(clsName, obj);
+                                }
+
+                            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                                LOGGER.error("load class " + clsName + " failed", e);
+                                throw new RuntimeException("load class " + clsName + " failed", e);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.error("load classes failed.", e);
+            throw new RuntimeException("load classes failed.", e);
+        }
     }
 
     @Override
