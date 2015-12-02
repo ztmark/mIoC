@@ -1,5 +1,7 @@
 package com.mark.core;
 
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Strings;
 import com.mark.annotation.Bean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +30,6 @@ public class DefaultContainer implements Container {
     }
 
     private void scanPackage(String basePackage) {
-        // TODO
         try {
             Enumeration<URL> urls = DefaultContainer.class.getClassLoader().getResources(basePackage.replace(".", "/"));
             while (urls.hasMoreElements()) {
@@ -42,7 +43,7 @@ public class DefaultContainer implements Container {
                             String fileName = subFile.getName();
                             String clsName = fileName.substring(0, fileName.lastIndexOf("."));
                             String fullClsName = clsName;
-                            if (!"".equals(basePackage)) {
+                            if (!Strings.isNullOrEmpty(basePackage)) {
                                 fullClsName = basePackage + "." + clsName;
                             }
                             try {
