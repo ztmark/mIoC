@@ -1,7 +1,7 @@
 package com.mark.core;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Strings;
+import com.google.common.io.Files;
 import com.mark.annotation.Bean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -41,7 +40,7 @@ public class DefaultContainer implements Container {
                     for (File subFile : subFiles) {
                         if (subFile.isFile()) {
                             String fileName = subFile.getName();
-                            String clsName = fileName.substring(0, fileName.lastIndexOf("."));
+                            String clsName = Files.getNameWithoutExtension(fileName); //fileName.substring(0, fileName.lastIndexOf("."));
                             String fullClsName = clsName;
                             if (!Strings.isNullOrEmpty(basePackage)) {
                                 fullClsName = basePackage + "." + clsName;
