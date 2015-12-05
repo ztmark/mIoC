@@ -3,12 +3,14 @@ package com.mark.core;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import com.mark.annotation.Bean;
+import com.mark.annotation.Inject;
 import com.mark.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,6 +28,36 @@ public class DefaultContainer implements Container {
     public DefaultContainer(String... basePackage) {
         for (String p : basePackage) {
             scanPackage(p.trim());
+        }
+        doInjection();
+    }
+
+    private void doInjection() {
+        for (Object obj : container.values()) {
+            Field[] fields = obj.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                if (field.isAnnotationPresent(Inject.class)) {
+                    Inject inject = field.getAnnotation(Inject.class);
+                    String targetName = inject.name();
+                    if (Strings.isNullOrEmpty(targetName)) {
+                        targetName = field.getName();
+                    }
+                    try {
+                        Object target = getBeanByName(targetName, field.getType());
+                        if (target == null) {
+                            throw new RuntimeException("set filed " + field.getName() + " failed " + targetName + " class not found.");
+                        }
+                        field.setAccessible(true);
+                        field.set(obj, target);
+                    } catch (IllegalAccessException e) {
+                        LOGGER.error("set " + field.getName() + " failed.", e);
+                        throw new RuntimeException("set " + field.getName() + " failed.", e);
+                    } catch (RuntimeException e) {
+                        LOGGER.error(e.getMessage(), e);
+                        throw new RuntimeException(e.getMessage(), e);
+                    }
+                }
+            }
         }
     }
 

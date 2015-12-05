@@ -38,4 +38,10 @@ public class DefaultContainerTest {
         Assert.assertNotNull(test);
     }
 
+    @Test
+    public void testInject() {
+        PlainTestObj2 test = defaultContainer.getBeanByName("pto2", PlainTestObj2.class);
+        Assert.assertNotNull(test.getPto1());
+    }
+
 }
