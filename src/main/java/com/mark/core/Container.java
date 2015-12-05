@@ -7,6 +7,6 @@ package com.mark.core;
 public interface Container {
 
 
-    public <T> T getBeanByName(String name, Class<T> type);
+    <T> T getBeanByName(String name, Class<T> type);
 
 }

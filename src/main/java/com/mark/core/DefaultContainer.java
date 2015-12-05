@@ -3,6 +3,7 @@ package com.mark.core;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import com.mark.annotation.Bean;
+import com.mark.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,22 +41,24 @@ public class DefaultContainer implements Container {
                     for (File subFile : subFiles) {
                         if (subFile.isFile()) {
                             String fileName = subFile.getName();
-                            String clsName = Files.getNameWithoutExtension(fileName); //fileName.substring(0, fileName.lastIndexOf("."));
+                            String clsName = Files.getNameWithoutExtension(fileName);
                             String fullClsName = clsName;
                             if (!Strings.isNullOrEmpty(basePackage)) {
                                 fullClsName = basePackage + "." + clsName;
                             }
-                            try {
-                                Class<?> cls = Class.forName(fullClsName);
-                                if (cls.isAnnotationPresent(Bean.class)) {
-                                    Object obj = cls.newInstance();
+                            Class<?> cls = Utils.loadClass(fullClsName);
+                            if (cls.isAnnotationPresent(Bean.class)) {
+                                Object obj = Utils.newInstance(cls);
+                                Bean bean = cls.getAnnotation(Bean.class);
+                                if (Strings.isNullOrEmpty(bean.name())) {
                                     container.put(clsName, obj);
+                                } else {
+                                    container.put(bean.name(), obj);
                                 }
-
-                            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-                                LOGGER.error("load class " + clsName + " failed", e);
-                                throw new RuntimeException("load class " + clsName + " failed", e);
                             }
+
+                        } else {
+                            scanPackage(basePackage + "." + subFile.getName());
                         }
                     }
                 }
